@@ -1,0 +1,75 @@
+#!/bin/sh
+# Verify the TAS2783 speaker amps accept a stream; if not, reset the AMD ACP
+# controller (unbind/bind its PCI driver), which re-enumerates SoundWire and
+# re-downloads amp firmware. Works around:
+#  - intermittent -110 firmware-download timeouts on cold boot
+#  - amps losing firmware / card vanishing after s2idle resume
+#    (kernel bugzilla #221798, not fixed upstream as of 2026-09)
+set -u
+
+CARD=amdsoundwire
+PCM=2          # SDW1-PIN1-PLAYBACK-SmartAmp
+TRIES=3
+
+log() { echo "px13-audio: $*"; }
+
+acp_dev() {
+	for d in /sys/bus/pci/devices/*; do
+		[ "$(cat "$d/vendor")" = 0x1022 ] || continue
+		[ "$(cat "$d/device")" = 0x15e2 ] || continue
+		basename "$d"
+		return 0
+	done
+	return 1
+}
+
+# 0 = amps OK (or busy, meaning something is already playing through them)
+amps_ok() {
+	grep -q "\[$CARD" /proc/asound/cards || return 1
+	out=$(timeout 5 aplay -q -D "hw:$CARD,$PCM" -f S16_LE -r 48000 -c 2 \
+		-d 1 /dev/zero 2>&1) && return 0
+	case "$out" in *"busy"*) return 0 ;; esac
+	return 1
+}
+
+# The amps download ~40 KB of firmware over SoundWire after attaching, which
+# takes a few seconds; poll instead of failing on the first early attempt.
+wait_amps() {
+	i=0
+	while [ $i -lt 20 ]; do
+		amps_ok && return 0
+		sleep 1; i=$((i + 1))
+	done
+	return 1
+}
+
+# WirePlumber does not always recover when the card disappears and returns.
+restart_user_audio() {
+	for uid in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $1}'); do
+		user=$(id -nu "$uid" 2>/dev/null) || continue
+		systemctl --user -M "$user@" try-restart wireplumber.service \
+			pipewire.service pipewire-pulse.service 2>/dev/null || true
+	done
+}
+
+wait_amps && { log "speaker amps OK"; exit 0; }
+
+DEV=$(acp_dev) || { log "AMD ACP (1022:15e2) not found"; exit 1; }
+DRV=$(basename "$(readlink -f "/sys/bus/pci/devices/$DEV/driver" 2>/dev/null)" 2>/dev/null || echo snd_pci_ps)
+[ "$DRV" = driver ] && DRV=snd_pci_ps
+
+n=1
+while [ $n -le $TRIES ]; do
+	log "amps not ready, resetting ACP $DEV ($DRV), attempt $n/$TRIES"
+	[ -e "/sys/bus/pci/drivers/$DRV/$DEV" ] && echo "$DEV" > "/sys/bus/pci/drivers/$DRV/unbind"
+	sleep 2
+	echo "$DEV" > "/sys/bus/pci/drivers/$DRV/bind"
+	if wait_amps; then
+		log "speaker amps OK after reset"
+		restart_user_audio
+		exit 0
+	fi
+	n=$((n + 1))
+done
+log "speaker amps still failing, see: journalctl -k | grep tas2783"
+exit 1

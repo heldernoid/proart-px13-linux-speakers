@@ -1,0 +1,14 @@
+[Unit]
+Description=ASUS ProArt PX13: verify TAS2783 speaker amps after resume
+After=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
+ConditionPathExists=/sys/bus/soundwire/drivers/slave-tas2783
+
+[Service]
+Type=oneshot
+# Must run after the sleep target completes (not as a system-sleep hook):
+# unbinding ACP while user.slice is still frozen hangs.
+ExecStartPre=/bin/sleep 3
+ExecStart=/usr/local/sbin/px13-audio-check
+
+[Install]
+WantedBy=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target

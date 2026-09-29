@@ -1,0 +1,11 @@
+[Unit]
+Description=ASUS ProArt PX13: verify TAS2783 speaker amps after boot
+After=sound.target systemd-udev-settle.service
+ConditionPathExists=/sys/bus/soundwire/drivers/slave-tas2783
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/px13-audio-check
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,74 @@
+From 182d0122a7d98cfa5f2d42d3cb8e9e1b8697b69a Mon Sep 17 00:00:00 2001
+From: Baojun Xu <baojun.xu@ti.com>
+Date: Fri, 17 Jul 2026 16:34:02 +0800
+Subject: [PATCH] ucm2: sof-soundwire: Add tas2783 support
+
+Closes: https://github.com/alsa-project/alsa-ucm-conf/pull/812
+Signed-off-by: Baojun Xu <baojun.xu@ti.com>
+Signed-off-by: Jaroslav Kysela <perex@perex.cz>
+---
+ ucm2/codecs/tas2783/init.conf         |  9 +++++++++
+ ucm2/sof-soundwire/sof-soundwire.conf |  2 +-
+ ucm2/sof-soundwire/tas2783.conf       | 24 ++++++++++++++++++++++++
+ 3 files changed, 34 insertions(+), 1 deletion(-)
+ create mode 100644 ucm2/codecs/tas2783/init.conf
+ create mode 100644 ucm2/sof-soundwire/tas2783.conf
+
+diff --git a/ucm2/codecs/tas2783/init.conf b/ucm2/codecs/tas2783/init.conf
+new file mode 100644
+index 000000000..6e4f23dce
+--- /dev/null
++++ b/ucm2/codecs/tas2783/init.conf
+@@ -0,0 +1,9 @@
++# tas2783 specific switch control settings
++
++BootSequence [
++	cset "name='Left Spk' on"
++	cset "name='Right Spk' on"
++	cset "name='Left Spk2' on"
++	cset "name='Right Spk2' on"
++]
++
+diff --git a/ucm2/sof-soundwire/sof-soundwire.conf b/ucm2/sof-soundwire/sof-soundwire.conf
+index 3ccf49304..62398f885 100644
+--- a/ucm2/sof-soundwire/sof-soundwire.conf
++++ b/ucm2/sof-soundwire/sof-soundwire.conf
+@@ -134,7 +134,7 @@ If.spk {
+ 	False.If.filter {
+ 		Condition {
+ 			Type RegexMatch
+-			Regex "(${var:MultiCodecRegex}|rt1318|cs42l43-spk(\\+cs35l56)?|cs35l56((-bridge)|(\\+cs42l43-spk))?)"
++			Regex "(${var:MultiCodecRegex}|tas2783|rt1318|cs42l43-spk(\\+cs35l56)?|cs35l56((-bridge)|(\\+cs42l43-spk))?)"
+ 			String "${var:SpeakerCodecFile}"
+ 		}
+ 		True.Include.a.File "/codecs/${var:SpeakerCodecFile}/init.conf"
+diff --git a/ucm2/sof-soundwire/tas2783.conf b/ucm2/sof-soundwire/tas2783.conf
+new file mode 100644
+index 000000000..2106f94da
+--- /dev/null
++++ b/ucm2/sof-soundwire/tas2783.conf
+@@ -0,0 +1,24 @@
++# Use case Configuration for sof-soundwire card
++
++SectionDevice."Speaker" {
++	Comment	"Speaker"
++
++	EnableSequence [
++		cset "name='Left Spk Switch' on"
++		cset "name='Right Spk Switch' on"
++		cset "name='Left Spk2 Switch' on"
++		cset "name='Right Spk2 Switch' on"
++	]
++
++	DisableSequence [
++		cset "name='Left Spk Switch' off"
++		cset "name='Right Spk Switch' off"
++		cset "name='Left Spk2 Switch' off"
++		cset "name='Right Spk2 Switch' off"
++	]
++
++	Value {
++	      PlaybackPriority 100
++	      PlaybackPCM "hw:${CardId},2"
++	}
++}
