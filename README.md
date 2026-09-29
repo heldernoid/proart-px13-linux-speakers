@@ -84,3 +84,11 @@ by hand after unusual sequences, such as several resets in quick succession.
 Once your distro ships linux-firmware ≥ 20260519, alsa-ucm-conf with
 `182d0122a7`, and a kernel where bug 221798 is fixed, run
 `sudo ./install.sh --uninstall`.
+
+## License
+
+The scripts, systemd units and documentation are MIT, see `LICENSE`.
+Exceptions: `ucm2/` is backported from alsa-ucm-conf and keeps that project's
+BSD-3-Clause license. The TAS2783 firmware isn't in this repo; it's
+downloaded from linux-firmware under TI's redistributable license
+(`LICENCE.ti-tspa`).
