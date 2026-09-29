@@ -129,6 +129,6 @@ if command -v update-initramfs >/dev/null &&
 fi
 
 # --- 4. apply now (no reboot needed) --------------------------------------
-log "resetting audio controller to load the firmware"
+log "checking speaker amps (resets the audio controller only if needed)"
 "$SBIN/px13-audio-check" || true
 log "done. Pick 'Speaker' in sound settings if it is not selected automatically."
