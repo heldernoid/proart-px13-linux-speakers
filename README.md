@@ -21,12 +21,12 @@ binds fine. Three things are missing:
 
 ## What `install.sh` does
 
-1. **Firmware.** Downloads the two TI files from the pinned linux-firmware
-   commit and verifies them against `firmware/SHA256SUMS`. It installs them to
+1. **Firmware.** Uses the two TI files bundled in `firmware/`, which are
+   unmodified copies from linux-firmware commit `2f90f4fe`. If they're missing,
+   it downloads them from that commit. Either way it verifies them against
+   `firmware/SHA256SUMS` and installs them to
    `/lib/firmware/updates/ti/audio/tas2783/`, with symlinks under both the
-   old (≤ 7.1) and new (≥ 7.2) names. For offline installs, put the `.bin`
-   files in `firmware/` first. License: TI "Redistributable", see
-   `LICENCE.ti-tspa` in linux-firmware.
+   old (≤ 7.1) and new (≥ 7.2) names.
 2. **UCM.** Installs the upstream `tas2783.conf` and generates a card-specific
    copy of the stock `amd-soundwire.conf` that sets `SpeakerCodec1 "tas2783"`.
    An apt hook regenerates that copy whenever `alsa-ucm-conf` updates. It
@@ -89,6 +89,7 @@ Once your distro ships linux-firmware ≥ 20260519, alsa-ucm-conf with
 
 The scripts, systemd units and documentation are MIT, see `LICENSE`.
 Exceptions: `ucm2/` is backported from alsa-ucm-conf and keeps that project's
-BSD-3-Clause license. The TAS2783 firmware isn't in this repo; it's
-downloaded from linux-firmware under TI's redistributable license
-(`LICENCE.ti-tspa`).
+BSD-3-Clause license. `firmware/*.bin` is Copyright (c) Texas Instruments,
+redistributed unmodified under the TI TSPA license in
+`firmware/LICENCE.ti-tspa`, as it is in linux-firmware. Don't modify those
+files: the license only permits redistributing them unchanged.
